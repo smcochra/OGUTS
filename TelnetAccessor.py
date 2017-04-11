@@ -7,12 +7,14 @@ Created on Mar 23, 2017
 """
 
 import TelnetDriver
-import datetime
+import time
 
 class TelnetAccessor(object):
     """
     Encompasses Send, Expect, SendExpect, Logging to DB with Timestamp
     """
+    matchobj = None
+    
     def __init__(self, debugFlag=False):
         """
         Instantiate TelnetDriver Class
@@ -34,37 +36,17 @@ class TelnetAccessor(object):
         self.t.debug('Sending: %r' % data)
         self.t.send(data)
         
-    def expect_old(self, matchlist, timeout=5):
+    def getlastmatchobj(self):
         """
-        Arguments -
-        + matchlist - regex or list of regex's to match against
-        + timeout - seconds before timeout occurs
-        Returns tupple dictionary with following keys:
-        + 'matchidx' - index of item matched from argument matchlist
-        + 'matchobj' - MatchObject; see documentation re.MatchObject
-        + 'matchtext' - raw string that pattern matched against
-        + 'buffer' - buffer captured between start of expect call and timeout/match
-        + 'timeout_occured' - True or False
-        
+        Returns last RE match object
         """
-        idx, mobj, buf = self.t.expect(matchlist, timeout)
-        
-        returndict = {}
-        
-        timeout = True
-        mtext = None
-        if idx != -1:
-            timeout = False
-            # fetch entire match
-            mtext = mobj.group(0)
-        
-        returndict['matchidx'] = idx
-        returndict['matchobj'] = mobj
-        returndict['matchtext'] = mtext
-        returndict['buffer'] = buf
-        returndict['timeout_occured'] = timeout
-        
-        return returndict
+        return self.matchobj
+    
+    def setmatchobj(self, matchobj):
+        """
+        Set RE match object for query
+        """
+        self.matchobj = matchobj
     
     def expect(self, matchlist, timeout=5):
         """
@@ -97,7 +79,7 @@ class TelnetAccessor(object):
                 buffer += '\n'
         
         # remove last new line that was applied in excess above
-        buffer = buffer[:-2]
+        buffer = buffer[:-1]
         
         timeout = True
         mtext = None
@@ -106,8 +88,10 @@ class TelnetAccessor(object):
             # fetch entire match
             mtext = expobj['mobj'].group(0)
     
+        self.setmatchobj(expobj['mobj'])
+    
         returndict['matchidx'] = expobj['midx']
-        returndict['matchobj'] = expobj['mobj']
+        # returndict['matchobj'] = expobj['mobj']
         returndict['matchtext'] = mtext
         returndict['buffer'] = buffer
         returndict['bufobj'] = expobj['buffer']
@@ -174,10 +158,10 @@ class TelnetAccessor(object):
             for bufobj in cmd_dict_list:
                 for timestamp, buf_list in bufobj.iteritems():
                     for idx in range(len(buf_list)):
-                        print timestamp + '\t%s' % buf_list[idx]
+                        print '%s\t%s' % (timestamp, buf_list[idx])
         
         # don't forget to print lastline that we are storing               
-        print timestamp + '\t%s' % lastline
+        print '%s\t%s' % (timestamp, lastline)
     
 def logmsg(msg):
     """
@@ -196,10 +180,14 @@ def usermsg(msg):
     
     
 def gettimestamp():
-    return datetime.datetime.now()
+    """
+    Returns int of epoch in milliseconds
+    """
+    # return datetime.datetime.now()
+    return int(time.time() * 1000)
     
     
-def test(console='10.31.248.147:3009'):
+def test(console='10.31.248.186:3016'):
     usermsg('Testing User Message!')
     logmsg('Testing log Message!')
     
@@ -219,9 +207,9 @@ def test(console='10.31.248.147:3009'):
     
     logmsg('Testing sendexpect_list...')
     
-    data_list = ['exit', 'en', 'skip', 'show media']
+    data_list = ['exit', 'en', 'skip', 'show version']
 
-    results = session.sendexpect_list(data_list, ['not_a_match', 'Net.*4X'], timeout=15, debug=debugFlag)
+    results = session.sendexpect_list(data_list, ['not_a_match', 'Router'], timeout=15, debug=debugFlag)
 
     session.print_log_with_timestamps(results)
     
