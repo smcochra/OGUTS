@@ -1,0 +1,12 @@
+TestName,Command,Prompt,Timeout,Known,Regex,Pass_CallBack,Timeout_CallBack,Fail_CallBack
+VERSION_CHECK,en\r,NetIron\sCE[SR]\s2024[CF]-4X#,5,,,,,
+,skip\r,NetIron\sCE[SR]\s2024[CF]-4X#,5,,,,,
+,show version\r,NetIron\sCE[SR]\s2024[CF]-4X#,60,5.5.0T185,Boot\s*:\sVersion\s(.*)\sCopyright,,retry_version_check,
+,,,,0x00000001,CPLD\sVersion: \s(.*),,,
+,,,,0x015d,PBIF\sVersion:\s(.*),,,
+MEM_TEST,reload-yes\r,,,,,,,
+,,stop\sat\smemory\stest,5,,,,,
+,a,Boot\(Mem-Test\)>,20,,,,,
+,twogig\r,Boot\(Mem-Test\)>,5,,,,,
+,mt\r,Boot\(Mem-Test\)>,30,,,mem_pass,,abort_test
+REBOOT,reset,NetIron\sCE[SR]\s2024[CF]-4X#,180,,Metro\s24X1G.*4X10G\sis\sdetected.,,,
